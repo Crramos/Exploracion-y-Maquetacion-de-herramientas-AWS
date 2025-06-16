@@ -1,7 +1,7 @@
 import boto3
 
 # Crear cliente de Security Hub
-client = boto3.client('securityhub')
+client = boto3.client('securityhub', region_name='us-west-1')
 
 # Activar Security Hub (si no está activado)
 try:

@@ -248,7 +248,3 @@ Resources:
       Enable: true
       FindingPublishingFrequency: FIFTEEN_MINUTES
 
-  ##  Security Hub 
-  SecurityHub:
-    Type: AWS::SecurityHub::Hub
-    Properties: {}
