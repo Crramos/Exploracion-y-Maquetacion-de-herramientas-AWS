@@ -55,65 +55,29 @@ for group, users in group_users.items():
                 raise
 
 # 3. Políticas para los grupos
-viewer_policy = {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "securityhub:GetFindings",
-                "securityhub:DescribeStandards",
-                "securityhub:GetInsightResults",
-                "securityhub:DescribeHub",
-                "securityhub:ListEnabledProductsForImport",
-                "securityhub:ListFindingAggregators",
-                "securityhub:GetAdhocInsightResults",
-                "securityhub:ListMembers"
-            ],
-            "Resource": "*"
-        }
-    ]
+
+policy_dir = 'config/policies'
+
+policy_map = {
+    'SecurityViewers': 'SecurityViewers.json',
+    'DevOps': 'SecurityViewers.json',
+    'Compliance': 'SecurityViewers.json',
+    'AdminCloud': 'AdminCloud.json'
 }
 
-admin_policy = {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "securityhub:*",
-                "iam:*",
-                "config:*",
-                "cloudtrail:*",
-                "guardduty:*",
-                "kms:*",
-                "organizations:*"
-            ],
-            "Resource": "*"
-        }
-    ]
-}
-
-for group in ['SecurityViewers', 'DevOps', 'Compliance']:
+for group, policy_file in policy_map.items():
     try:
+        with open(os.path.join(policy_dir, policy_file)) as f:
+            policy_doc = json.load(f)
+
         iam.put_group_policy(
             GroupName=group,
-            PolicyName='SecurityHubReadPolicy',
-            PolicyDocument=json.dumps(viewer_policy)
+            PolicyName=os.path.splitext(policy_file)[0],
+            PolicyDocument=json.dumps(policy_doc)
         )
-        print(f"📎 Política de lectura aplicada al grupo {group}")
+        print(f"📎 Política aplicada al grupo {group} desde {policy_file}")
     except Exception as e:
         print(f"⚠️  Error aplicando política a {group}: {e}")
-
-try:
-    iam.put_group_policy(
-        GroupName='AdminCloud',
-        PolicyName='SecurityHubFullAccess',
-        PolicyDocument=json.dumps(admin_policy)
-    )
-    print(" Política de administración aplicada al grupo AdminCloud")
-except Exception as e:
-    print(f"  Error aplicando política a AdminCloud: {e}")
 
 # 4. Activar Security Hub
 try:

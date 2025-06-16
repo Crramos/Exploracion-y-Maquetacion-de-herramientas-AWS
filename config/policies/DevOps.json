@@ -1,0 +1,20 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "securityhub:GetFindings",
+        "securityhub:DescribeStandards",
+        "securityhub:GetInsightResults",
+        "securityhub:DescribeHub",
+        "securityhub:ListEnabledProductsForImport",
+        "securityhub:ListFindingAggregators",
+        "securityhub:GetAdhocInsightResults",
+        "securityhub:ListMembers"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+
