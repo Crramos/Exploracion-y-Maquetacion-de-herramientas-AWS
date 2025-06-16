@@ -228,18 +228,29 @@ Resources:
             Action: sts:AssumeRole
       Path: /
       Policies:
-        - PolicyName: ConfigRecorderMinimalAccess
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - config:Put*
-                  - config:Get*
-                  - config:Describe*
-                  - s3:PutObject
-                  - s3:GetBucketAcl
-                Resource: '*'
+      - PolicyName: ConfigRecorderFullAccess
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - config:Put*
+                - config:Get*
+                - config:Describe*
+                - ec2:Describe*
+                - iam:Get*
+                - iam:List*
+                - s3:Get*
+                - s3:List*
+                - kms:ListAliases
+                - kms:DescribeKey
+                - kms:GetKeyRotationStatus
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                - s3:PutObject
+                - s3:GetBucketAcl
+              Resource: !Sub arn:aws:s3:::${AuditBucketName}/config-logs/*
 
   ##  GuardDuty Detector 
   GuardDutyDetector:
