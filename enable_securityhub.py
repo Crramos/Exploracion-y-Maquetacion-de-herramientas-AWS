@@ -32,7 +32,7 @@ already_enabled_arns = [s['StandardsArn'] for s in enabled]
 
 # Filtrar solo los que faltan
 pending = [
-    {"StandardsArn": arn} for arn in standards_to_enable if arn not in already_enabled_arns
+    s for s in standards_to_enable if s["StandardsArn"] not in already_enabled_arns
 ]
 
 if pending:
