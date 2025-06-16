@@ -26,11 +26,31 @@ group_users = {
     'AdminCloud': ['admincloud-user1', 'admincloud-user2']
 }
 
+passwords = {
+    'securityviewer-user1': 'ViewerUser123!',
+    'securityviewer-user2': 'ViewerUser123!',
+    'devops-user1': 'DevOpsUser123!',
+    'devops-user2': 'DevOpsUser123!',
+    'compliance-user1': 'ComplianceUser123!',
+    'compliance-user2': 'ComplianceUser123!',
+    'admincloud-user1': 'AdminUser123!',
+    'admincloud-user2': 'AdminUser123!'
+}
+
 for group, users in group_users.items():
     for user in users:
         try:
             iam.create_user(UserName=user)
             print(f"✅ Usuario creado: {user}")
+
+            # Crear perfil de inicio de sesión (Login Profile)
+            iam.create_login_profile(
+                UserName=user,
+                Password=passwords[user],
+                PasswordResetRequired=True
+            )
+            print(f"🔐 Login habilitado para: {user}")
+
         except ClientError as e:
             if e.response['Error']['Code'] == 'EntityAlreadyExists':
                 print(f"ℹ️ El usuario {user} ya existe.")
@@ -68,7 +88,14 @@ admin_policy = {
     "Statement": [
         {
             "Effect": "Allow",
-            "Action": "securityhub:*",
+            "Action": [
+                "securityhub:*",
+                "iam:*",
+                "config:*",
+                "cloudtrail:*",
+                "guardduty:*",
+                "kms:*",
+                "organizations:*"
             "Resource": "*"
         }
     ]
