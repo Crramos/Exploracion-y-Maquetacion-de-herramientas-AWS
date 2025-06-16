@@ -1,0 +1,254 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  CloudFormation template  Base de Seguridad y Cumplimiento en AWS Incluye CloudTrail organizacional, AWS Config, GuardDuty, SecurityHub. Crea los roles IAM requeridos y los asocia con permisos en KMS y S3 automaticamente.
+
+Parameters:
+  OrgId:
+    Type: String
+    Description: ID de la organizaci?n AWS (ej. o-abc1234567)
+
+  AuditBucketName:
+    Type: String
+    Description: Nombre del bucket S3 central de auditor?a y logs
+
+#   Recursos  #
+Resources:
+
+  ##  Roles IAM para cada grupo 
+  SecurityReadRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: SecurityReadRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: '*'
+            Condition:
+              StringEquals:
+                aws:PrincipalOrgID: !Ref OrgId
+            Action: sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/SecurityAudit
+
+  AuditReadRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: AuditReadRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: '*'
+            Condition:
+              StringEquals:
+                aws:PrincipalOrgID: !Ref OrgId
+            Action: sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/job-function/ViewOnlyAccess
+        - arn:aws:iam::aws:policy/ReadOnlyAccess
+
+  ProdLogWriteRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ProdLogWriteRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: '*'
+            Action: sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
+
+  DevLogWriteRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: DevLogWriteRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: '*'
+            Action: sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/ReadOnlyAccess
+
+  ##  Clave KMS 
+  TrailKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: Clave KMS para cifrado
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: RootAccess
+            Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action: kms:*
+            Resource: '*'
+          - Sid: AllowCloudTrail
+            Effect: Allow
+            Principal:
+              Service: cloudtrail.amazonaws.com
+            Action:
+              - kms:GenerateDataKey*
+              - kms:Encrypt
+              - kms:Decrypt
+              - kms:ReEncrypt*
+            Resource: '*'
+            Condition:
+              StringEquals:
+                kms:EncryptionContext:aws:cloudtrail:arn: !Sub arn:aws:cloudtrail:${AWS::Region}:${AWS::AccountId}:trail/OrgTrail
+          - Sid: ReadRoles
+            Effect: Allow
+            Principal:
+              AWS:
+                - !GetAtt SecurityReadRole.Arn
+                - !GetAtt AuditReadRole.Arn
+            Action:
+              - kms:Decrypt
+              - kms:DescribeKey
+              - kms:GenerateDataKey*
+            Resource: '*'
+
+  ##  Bucket S3 central de logs 
+  AuditBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: !Ref AuditBucketName
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  AuditBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref AuditBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowConfigPut
+            Effect: Allow
+            Principal:
+              Service: config.amazonaws.com
+            Action: s3:PutObject
+            Resource: !Sub arn:aws:s3:::${AuditBucketName}/config-logs/*
+            Condition:
+              StringEquals:
+                s3:x-amz-acl: bucket-owner-full-control
+          - Sid: AllowConfigGetAcl
+            Effect: Allow
+            Principal:
+              Service: config.amazonaws.com
+            Action: s3:GetBucketAcl
+            Resource: !Sub arn:aws:s3:::${AuditBucketName}
+          - Sid: AWSCloudTrailAclCheck
+            Effect: Allow
+            Principal:
+              Service: cloudtrail.amazonaws.com
+            Action: s3:GetBucketAcl
+            Resource: !Sub arn:aws:s3:::${AuditBucketName}
+          - Sid: AllowCloudTrailPut
+            Effect: Allow
+            Principal:
+              Service: cloudtrail.amazonaws.com
+            Action: s3:PutObject
+            Resource: !Sub arn:aws:s3:::${AuditBucketName}/AWSLogs/${AWS::AccountId}/*
+            Condition:
+              StringEquals:
+                s3:x-amz-acl: bucket-owner-full-control
+          - Sid: AllowProdDevPut
+            Effect: Allow
+            Principal:
+              AWS:
+                - !GetAtt ProdLogWriteRole.Arn
+                - !GetAtt DevLogWriteRole.Arn
+            Action: s3:PutObject
+            Resource: !Sub arn:aws:s3:::${AuditBucketName}/application-logs/*
+            Condition:
+              StringEquals:
+                s3:x-amz-acl: bucket-owner-full-control
+          - Sid: AllowSecurityAuditRead
+            Effect: Allow
+            Principal:
+              AWS:
+                - !GetAtt SecurityReadRole.Arn
+                - !GetAtt AuditReadRole.Arn
+            Action:
+              - s3:GetObject
+              - s3:ListBucket
+            Resource:
+              - !Sub arn:aws:s3:::${AuditBucketName}
+              - !Sub arn:aws:s3:::${AuditBucketName}/*
+
+  ##  AWS Config
+  ConfigRecorder:
+    Type: AWS::Config::ConfigurationRecorder
+    Properties:
+      Name: default
+      RoleARN: !GetAtt ConfigRecorderRole.Arn
+      RecordingGroup:
+        AllSupported: true
+        IncludeGlobalResourceTypes: true
+
+  ConfigDeliveryChannel:
+    Type: AWS::Config::DeliveryChannel
+    Properties:
+      S3BucketName: !Ref AuditBucket
+      ConfigSnapshotDeliveryProperties:
+        DeliveryFrequency: One_Hour
+      S3KeyPrefix: config-logs
+
+  ConfigRecorderRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ConfigRecorderRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: config.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: ConfigRecorderMinimalAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - config:Put*
+                  - config:Get*
+                  - config:Describe*
+                  - s3:PutObject
+                  - s3:GetBucketAcl
+                Resource: '*'
+
+  ##  GuardDuty Detector 
+  GuardDutyDetector:
+    Type: AWS::GuardDuty::Detector
+    Properties:
+      Enable: true
+      FindingPublishingFrequency: FIFTEEN_MINUTES
+
+  ##  Security Hub 
+  SecurityHub:
+    Type: AWS::SecurityHub::Hub
+    Properties: {}
