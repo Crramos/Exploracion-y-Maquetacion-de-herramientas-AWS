@@ -131,6 +131,34 @@ Resources:
             Condition:
               StringEquals:
                 s3:x-amz-acl: bucket-owner-full-control
+
+  CloudTrailLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/cloudtrail/logs
+      RetentionInDays: 90
+  CloudTrailCloudWatchLogsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: CloudTrailLogsRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudtrail.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CloudTrailLogsPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:PutLogEvents
+                  - logs:CreateLogStream
+                Resource: !GetAtt CloudTrailLogGroup.Arn
+
   CloudTrail:
     Type: AWS::CloudTrail::Trail
     Properties:
@@ -140,6 +168,9 @@ Resources:
       IsMultiRegionTrail: true
       IncludeGlobalServiceEvents: true
       EnableLogFileValidation: true
+      InsightSelectors:
+      - InsightType: ApiCallRateInsight
+      - InsightType: ApiErrorRateInsight
       EventSelectors:
         - ReadWriteType: All
           IncludeManagementEvents: true
@@ -147,6 +178,9 @@ Resources:
             - Type: AWS::S3::Object
               Values:
                 - !Sub arn:aws:s3:::${AuditBucketName}/
+      CloudWatchLogsLogGroupArn: !GetAtt CloudTrailLogGroup.Arn
+      CloudWatchLogsRoleArn: !GetAtt CloudTrailCloudWatchLogsRole.Arn
+              
   ##  AWS Config
   ConfigRecorder:
     Type: AWS::Config::ConfigurationRecorder
