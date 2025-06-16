@@ -26,11 +26,18 @@ standards_to_enable = [
     }
 ]
 
-try:
-    response = client.batch_enable_standards(StandardsSubscriptionRequests=standards_to_enable)
-    print("✅ Estándares suscritos correctamente.")
-except client.exceptions.InvalidInputException as e:
-    print("❌ Error en la entrada:", e)
-except Exception as e:
-    print("❌ Otro error:", e)
+# Obtener los que ya están activos
+enabled = client.get_enabled_standards()['StandardsSubscriptions']
+already_enabled_arns = [s['StandardsArn'] for s in enabled]
+
+# Filtrar solo los que faltan
+pending = [
+    {"StandardsArn": arn} for arn in standards_to_enable if arn not in already_enabled_arns
+]
+
+if pending:
+    client.batch_enable_standards(StandardsSubscriptionRequests=pending)
+    print("✅ Estándares nuevos habilitados.")
+else:
+    print("ℹ️ Todos los estándares ya estaban habilitados.")
 
