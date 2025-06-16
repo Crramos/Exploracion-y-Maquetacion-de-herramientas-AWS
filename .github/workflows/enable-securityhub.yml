@@ -27,6 +27,6 @@ jobs:
       - name: Install dependencies and run script
         run: |
           pip install boto3
-          pip install yaml
+          pip install pyyaml
           python enable_securityhub.py
 
