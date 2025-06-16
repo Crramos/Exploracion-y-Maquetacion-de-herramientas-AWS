@@ -1,4 +1,5 @@
 import boto3
+import yaml
 import json
 from botocore.exceptions import ClientError
 
@@ -7,7 +8,10 @@ iam = boto3.client('iam')
 shub = boto3.client('securityhub', region_name=region)
 
 #  1. Crear grupos IAM
-groups = ['SecurityViewers', 'DevOps', 'Compliance', 'AdminCloud']
+with open('config/groups.txt', 'r') as f:
+    content = f.read()
+    groups = content.split()  
+
 for group in groups:
     try:
         iam.create_group(GroupName=group)
@@ -19,23 +23,11 @@ for group in groups:
             raise
 
 # 2. Crear usuarios y asignar a grupo
-group_users = {
-    'SecurityViewers': ['securityviewer-user1', 'securityviewer-user2'],
-    'DevOps': ['devops-user1', 'devops-user2'],
-    'Compliance': ['compliance-user1', 'compliance-user2'],
-    'AdminCloud': ['admincloud-user1', 'admincloud-user2']
-}
+with open('config/group_users.yaml', 'r') as f:
+    group_users = yaml.safe_load(f)
 
-passwords = {
-    'securityviewer-user1': 'ViewerUser123!',
-    'securityviewer-user2': 'ViewerUser123!',
-    'devops-user1': 'DevOpsUser123!',
-    'devops-user2': 'DevOpsUser123!',
-    'compliance-user1': 'ComplianceUser123!',
-    'compliance-user2': 'ComplianceUser123!',
-    'admincloud-user1': 'AdminUser123!',
-    'admincloud-user2': 'AdminUser123!'
-}
+with open('config/passwords.yaml', 'r') as f:
+    passwords = yaml.safe_load(f)
 
 for group, users in group_users.items():
     for user in users:
@@ -51,16 +43,16 @@ for group, users in group_users.items():
             )
             print(f"🔐 Login habilitado para: {user}")
 
+            iam.add_user_to_group(GroupName=group, UserName=user)
+            print(f"{user} añadido a {group}")
+
         except ClientError as e:
             if e.response['Error']['Code'] == 'EntityAlreadyExists':
                 print(f"ℹ️ El usuario {user} ya existe.")
+            elif e.response['Error']['Code'] == 'AccessDenied':
+                print(f"❌ Permiso denegado al crear perfil de login para {user}.")
             else:
                 raise
-        try:
-            iam.add_user_to_group(GroupName=group, UserName=user)
-            print(f"➡️  Usuario {user} añadido al grupo {group}")
-        except ClientError as e:
-            print(f"⚠️  No se pudo añadir {user} a {group}: {e}")
 
 # 3. Políticas para los grupos
 viewer_policy = {
