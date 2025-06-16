@@ -96,6 +96,7 @@ admin_policy = {
                 "guardduty:*",
                 "kms:*",
                 "organizations:*"
+            ]
             "Resource": "*"
         }
     ]
