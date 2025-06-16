@@ -2,7 +2,7 @@ name: Enable SecurityHub Standards
 
 on:
   push:
-    branches: [ main ]  # Puedes cambiar a otra rama si lo prefieres
+    branches: [ main ]  
 
 jobs:
   enable-securityhub:
@@ -24,9 +24,10 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-1  # cambiar por la región de AWS
 
-      - name: Install dependencies and run script
+      - name: Install Python dependencies
         run: |
-          pip install boto3
-          pip install pyyaml
-          python enable_securityhub.py
+          pip install -r requirements.txt
 
+      - name: Run SecurityHub automation
+        run: |
+          python enable_securityhub.py
