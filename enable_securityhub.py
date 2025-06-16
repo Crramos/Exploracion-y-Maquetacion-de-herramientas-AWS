@@ -90,18 +90,12 @@ except Exception as e:
     exit(1)
 
 # 5. Suscribir a estándares
-standards_to_enable = [
-    {
-        "StandardsArn": "arn:aws:securityhub:eu-west-1::standards/aws-foundational-security-best-practices/v/1.0.0"
-    },
-    {
-        "StandardsArn": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0"
-    },
-    {
-        "StandardsArn": "arn:aws:securityhub:eu-west-1::standards/pci-dss/v/3.2.1"
-    }
-]
+with open('config/standards/securityhub_standards.yaml') as f:
+    standards_yaml = yaml.safe_load(f)
 
+standards_to_enable = [
+    {"StandardsArn": arn} for arn in standards_yaml.get("Standards", [])
+]
 enabled = shub.get_enabled_standards()['StandardsSubscriptions']
 enabled_arns = [s['StandardsArn'] for s in enabled]
 pending = [s for s in standards_to_enable if s["StandardsArn"] not in enabled_arns]
