@@ -15,15 +15,15 @@ except Exception as e:
 
 # Suscribir a los estándares recomendados
 standards_to_enable = [
-    {
-        "StandardsArn": "arn:aws:securityhub:eu-west-1::standards/aws-foundational-security-best-practices/v/1.0.0"
-    }
+#    {
+#        "StandardsArn": "arn:aws:securityhub:eu-west-1::standards/aws-foundational-security-best-practices/v/1.0.0"
+#    }
 #    {
 #        "StandardsArn": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0"
 #    },
-#    {
-#        "StandardsArn": "arn:aws:securityhub:eu-west-1::standards/pci-dss/v/3.2.1"
-#    }
+    {
+        "StandardsArn": "arn:aws:securityhub:eu-west-1::standards/pci-dss/v/3.2.1"
+    }
 ]
 
 try:
