@@ -1,0 +1,59 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Prerrequisitos de despliegue - Usuario github-deploy con permisos
+  espec?ficos para automatizaci?n con Security Hub e IAM
+
+Resources:
+
+  GitHubDeployUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: github-deploy
+      Policies:
+        - PolicyName: GitHubDeployPermissions
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: SecurityHubOperations
+                Effect: Allow
+                Action:
+                  - securityhub:EnableSecurityHub
+                  - securityhub:BatchEnableStandards
+                  - securityhub:DescribeHub
+                  - securityhub:DescribeStandards
+                  - securityhub:GetFindings
+                  - securityhub:GetEnabledStandards
+                  - securityhub:ListMembers
+                  - securityhub:GetAdhocInsightResults
+                  - securityhub:ListFindingAggregators
+                Resource: '*'
+              - Sid: IAMForAutomation
+                Effect: Allow
+                Action:
+                  - iam:CreateUser
+                  - iam:CreateGroup
+                  - iam:AddUserToGroup
+                  - iam:PutGroupPolicy
+                  - iam:ListGroups
+                  - iam:ListUsers
+                  - iam:GetUser
+                  - iam:CreateLoginProfile
+                Resource: '*'
+
+  GitHubDeployAccessKey:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref GitHubDeployUser
+      Status: Active
+
+Outputs:
+  GitHubDeployAccessKeyId:
+    Description: Access Key ID para el usuario github-deploy
+    Value: !Ref GitHubDeployAccessKey
+    Export:
+      Name: GitHubDeployAccessKeyId
+
+  GitHubDeploySecretAccessKey:
+    Description: Secret Access Key para el usuario github-deploy
+    Value: !GetAtt GitHubDeployAccessKey.SecretAccessKey
+    Export:
+      Name: GitHubDeploySecretAccessKey
