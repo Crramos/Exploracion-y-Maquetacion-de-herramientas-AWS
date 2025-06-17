@@ -4,9 +4,6 @@ SecurityViewers:
 DevOps:
   - devops-user1
   - devops-user2
-Compliance:
-  - compliance-user1
-  - compliance-user2
 AdminCloud:
   - admincloud-user1
   - admincloud-user2
