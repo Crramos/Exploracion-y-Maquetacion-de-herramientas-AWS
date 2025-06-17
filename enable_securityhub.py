@@ -57,29 +57,53 @@ with open('config/passwords.yaml', 'r') as f:
 
 for group, users in group_users.items():
     for user in users:
+        user_exists = False
+
+        # Intentar crear el usuario
         try:
             iam.create_user(UserName=user)
             print(f"✅ Usuario creado: {user}")
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'EntityAlreadyExists':
+                print(f"ℹ️ El usuario {user} ya existe.")
+                user_exists = True
+            else:
+                raise
 
-            # Crear perfil de inicio de sesión (Login Profile)
+        # Intentar crear login profile (solo si el usuario fue recién creado o ya existe)
+        try:
             iam.create_login_profile(
                 UserName=user,
                 Password=passwords[user],
                 PasswordResetRequired=True
             )
             print(f"🔐 Login habilitado para: {user}")
-
-            iam.add_user_to_group(GroupName=group, UserName=user)
-            print(f"{user} añadido a {group}")
-
         except ClientError as e:
             if e.response['Error']['Code'] == 'EntityAlreadyExists':
-                print(f"ℹ️ El usuario {user} ya existe.")
+                print(f"ℹ️ Login profile ya existe para: {user}")
             elif e.response['Error']['Code'] == 'AccessDenied':
-                print(f"❌ Permiso denegado al crear perfil de login para {user}.")
+                print(f"❌ Permiso denegado para login de {user}")
             else:
                 raise
 
+        # Verificar y corregir grupos
+        try:
+            current_groups = iam.list_groups_for_user(UserName=user)['Groups']
+            current_group_names = [g['GroupName'] for g in current_groups]
+
+            if group in current_group_names:
+                print(f"✅ {user} ya pertenece a su grupo correcto: {group}")
+            else:
+                # Eliminar de otros grupos
+                for other_group in current_group_names:
+                    iam.remove_user_from_group(GroupName=other_group, UserName=user)
+                    print(f"⬅️ {user} eliminado de grupo incorrecto: {other_group}")
+
+                # Añadir al grupo correcto
+                iam.add_user_to_group(GroupName=group, UserName=user)
+                print(f"➡️ {user} añadido al grupo correcto: {group}")
+        except ClientError as e:
+            print(f"⚠️ Error al gestionar grupos para {user}: {e}")
 
 # 4. Activar Security Hub
 try:
