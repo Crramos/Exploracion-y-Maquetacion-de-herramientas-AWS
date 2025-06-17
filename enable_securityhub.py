@@ -61,7 +61,7 @@ policy_dir = 'config/policies'
 
 policy_map = {
     'SecurityViewers': 'SecurityViewers.json',
-    'DevOps': 'SecurityViewers.json',
+    'DevOps': 'DevOps.json',
     'Compliance': 'SecurityViewers.json',
     'AdminCloud': 'AdminCloud.json'
 }
