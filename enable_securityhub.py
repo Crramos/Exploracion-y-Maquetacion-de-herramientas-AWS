@@ -23,7 +23,32 @@ for group in groups:
         else:
             raise
 
-# 2. Crear usuarios y asignar a grupo
+# 2. Políticas para los grupos
+
+policy_dir = 'config/policies'
+
+policy_map = {
+    'SecurityViewers': 'SecurityViewers.json',
+    'DevOps': 'DevOps.json',
+    'Compliance': 'Compliance.json',
+    'AdminCloud': 'AdminCloud.json'
+}
+
+for group, policy_file in policy_map.items():
+    try:
+        with open(os.path.join(policy_dir, policy_file)) as f:
+            policy_doc = json.load(f)
+
+        iam.put_group_policy(
+            GroupName=group,
+            PolicyName=os.path.splitext(policy_file)[0],
+            PolicyDocument=json.dumps(policy_doc)
+        )
+        print(f"📎 Política aplicada al grupo {group} desde {policy_file}")
+    except Exception as e:
+        print(f"⚠️  Error aplicando política a {group}: {e}")
+
+# 3. Crear usuarios y asignar a grupo
 with open('config/group_users.yaml', 'r') as f:
     group_users = yaml.safe_load(f)
 
@@ -55,30 +80,6 @@ for group, users in group_users.items():
             else:
                 raise
 
-# 3. Políticas para los grupos
-
-policy_dir = 'config/policies'
-
-policy_map = {
-    'SecurityViewers': 'SecurityViewers.json',
-    'DevOps': 'DevOps.json',
-    'Compliance': 'Compliance.json',
-    'AdminCloud': 'AdminCloud.json'
-}
-
-for group, policy_file in policy_map.items():
-    try:
-        with open(os.path.join(policy_dir, policy_file)) as f:
-            policy_doc = json.load(f)
-
-        iam.put_group_policy(
-            GroupName=group,
-            PolicyName=os.path.splitext(policy_file)[0],
-            PolicyDocument=json.dumps(policy_doc)
-        )
-        print(f"📎 Política aplicada al grupo {group} desde {policy_file}")
-    except Exception as e:
-        print(f"⚠️  Error aplicando política a {group}: {e}")
 
 # 4. Activar Security Hub
 try:
