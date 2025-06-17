@@ -45,6 +45,7 @@ Resources:
                   - iam:ListUsers
                   - iam:GetUser
                   - iam:CreateLoginProfile
+                  - iam:ListGroupsForUser
                 Resource: '*'
 
   GitHubDeployAccessKey:
