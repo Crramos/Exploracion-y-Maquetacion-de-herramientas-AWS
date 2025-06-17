@@ -5,15 +5,25 @@
       "Effect": "Allow",
       "Action": [
         "securityhub:*",
-        "iam:*",
         "config:*",
         "cloudtrail:*",
         "guardduty:*",
-        "kms:*",
-        "organizations:*"
+        "kms:DescribeKey",
+        "kms:GetKeyRotationStatus",
+        "kms:ListAliases",
+        "kms:Encrypt",
+        "kms:Decrypt",
+        "s3:*",
+        "ec2:*",
+        "iam:Get*",
+        "iam:List*",
+        "logs:*",
+        "cloudwatch:*",
+        "organizations:Describe*",
+        "organizations:List*",
+        "lambda:*"
       ],
       "Resource": "*"
     }
   ]
 }
-
