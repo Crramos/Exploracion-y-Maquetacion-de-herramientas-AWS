@@ -45,32 +45,34 @@ Resources:
       VpcId: !Ref MyVPC
       InternetGatewayId: !Ref InternetGateway
 
-  # Subred pública
-  PublicSubnet:
+  SubnetPublicaA:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref MyVPC
       CidrBlock: 10.0.1.0/24
-      MapPublicIpOnLaunch: true
-      AvailabilityZone: 
-        - eu-west-1a
-        - eu-west-1b
-      Tags:
-        - Key: Name
-          Value: PublicSubnet
+      AvailabilityZone: eu-west-1a
 
-  # Subred privada
-  PrivateSubnet:
+  SubnetPublicaB:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref MyVPC
       CidrBlock: 10.0.2.0/24
-      AvailabilityZone:  
-        - eu-west-1a
-        - eu-west-1b
-      Tags:
-        - Key: Name
-          Value: PrivateSubnet
+      AvailabilityZone: eu-west-1b
+
+  # Subred privada
+  SubnetPrivadaA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MyVPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: eu-west-1a
+
+  SubnetPrivadaB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MyVPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: eu-west-1b
 
   # Tabla de rutas pública
   PublicRouteTable:
@@ -89,7 +91,9 @@ Resources:
   PublicSubnetRouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: !Ref PublicSubnet
+      SubnetId: 
+        - !Ref SubnetPublicaA
+        - !Ref SubnetPublicaB
       RouteTableId: !Ref PublicRouteTable
 
   # NAT Gateway + EIP para la subred privada
@@ -102,7 +106,9 @@ Resources:
     Type: AWS::EC2::NatGateway
     Properties:
       AllocationId: !GetAtt NatEIP.AllocationId
-      SubnetId: !Ref PublicSubnet
+      SubnetId: 
+        - !Ref SubnetPublicaA
+        - !Ref SubnetPublicaB
       Tags:
         - Key: Name
           Value: NATGateway
@@ -123,7 +129,9 @@ Resources:
   PrivateSubnetRouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: !Ref PrivateSubnet
+      SubnetId: 
+        - !Ref SubnetPrivadaA
+        - !Ref SubnetPrivadaB
       RouteTableId: !Ref PrivateRouteTable
 
   # Security Groups 
@@ -165,7 +173,9 @@ Resources:
     Properties:
       InstanceType: t3.micro
       KeyName: !Ref KeyPairName
-      SubnetId: !Ref PublicSubnet
+      SubnetId: 
+        - !Ref SubnetPublicaA
+        - !Ref SubnetPublicaB
       SecurityGroupIds:
         - !Ref WebServerSG
       ImageId: ami-0152ea7e79f25bb5b   
@@ -179,7 +189,8 @@ Resources:
     Properties:
       DBSubnetGroupDescription: Subred privada para RDS
       SubnetIds:
-        - !Ref PrivateSubnet
+        - !Ref SubnetPrivadaA
+        - !Ref SubnetPrivadaB
       Tags:
         - Key: Name
           Value: DBSubnetGroup
