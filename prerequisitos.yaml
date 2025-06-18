@@ -10,6 +10,10 @@ Parameters:
     Type: String
     Description: Nombre del bucket S3 central de auditoria y logs
 
+  AWSServiceRoleForConfig:
+    Type: String
+    Description: ARN del rol AWSServiceRoleForConfig
+
 Resources:
 
   GitHubDeployUser:
@@ -186,8 +190,8 @@ Resources:
   ConfigRecorder:
     Type: AWS::Config::ConfigurationRecorder
     Properties:
+      RoleARN: !Ref AWSServiceRoleForConfig
       Name: default
-      RoleARN: !GetAtt ConfigRecorderRole.Arn
       RecordingGroup:
         AllSupported: true
         IncludeGlobalResourceTypes: true
@@ -200,50 +204,93 @@ Resources:
         DeliveryFrequency: One_Hour
       S3KeyPrefix: config-logs
 
-  ConfigRecorderRole:
-    Type: AWS::IAM::Role
+  S3BucketPublicReadProhibited:
+    Type: AWS::Config::ConfigRule
     Properties:
-      RoleName: ConfigRecorderRole
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: config.amazonaws.com
-            Action: sts:AssumeRole
-      Path: /
-      Policies:
-      - PolicyName: ConfigRecorderFullAccess
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-            - Effect: Allow
-              Action:
-                - config:Put*
-                - config:Get*
-                - config:Describe*
-                - ec2:Describe*
-                - iam:Get*
-                - iam:List*
-                - s3:Get*
-                - s3:List*
-                - kms:ListAliases
-                - kms:DescribeKey
-                - kms:GetKeyRotationStatus
-              Resource: '*'
-            - Effect: Allow
-              Action:
-                - s3:PutObject
-                - s3:GetBucketAcl
-              Resource: !Sub arn:aws:s3:::${AuditBucketName}/config-logs/*
-   ##  GuardDuty Detector 
+      ConfigRuleName: s3-bucket-public-read-prohibited
+      Source:
+        Owner: AWS
+        SourceIdentifier: S3_BUCKET_PUBLIC_READ_PROHIBITED
+
+  IAMRootAccessKeyCheck:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      ConfigRuleName: iam-root-access-key-check
+      Source:
+        Owner: AWS
+        SourceIdentifier: IAM_ROOT_ACCESS_KEY_CHECK
+
+  EC2InstanceManagedBySSM:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      ConfigRuleName: ec2-instance-managed-by-ssm
+      Source:
+        Owner: AWS
+        SourceIdentifier: EC2_INSTANCE_MANAGED_BY_SSM
+        
+##  GuardDuty Detector 
   GuardDutyDetector:
     Type: AWS::GuardDuty::Detector
     Properties:
       Enable: true
       FindingPublishingFrequency: FIFTEEN_MINUTES
+      DataSources:
+        S3Logs:
+          Enable: true
+        Kubernetes:
+          AuditLogs:
+            Enable: true
+
+  DefaultVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: DefaultTestVPC
+
+  GuardDutyTestSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Permite trafico de entrada para pruebas con GuardDuty
+      VpcId: !Ref DefaultVPC
+      SecurityGroupIngress:
+        - IpProtocol: "-1"        
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: GuardDutyTestSG
+
+  TestSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref DefaultVPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: eu-west-1a
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: TestSubnet
+
+  GuardDutyTestInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      ImageId: ami-0152ea7e79f25bb5b
+      SubnetId: !Ref TestSubnet 
+      SecurityGroupIds:
+        - !Ref GuardDutyTestSecurityGroup
+      Tags:
+        - Key: Name
+          Value: guardduty-test-instance
 
 Outputs:
+  InstanceId:
+    Description: ID de la instancia creada
+    Value: !Ref GuardDutyTestInstance
+
   GitHubDeployAccessKeyId:
     Description: Access Key ID para el usuario github-deploy
     Value: !Ref GitHubDeployAccessKey
