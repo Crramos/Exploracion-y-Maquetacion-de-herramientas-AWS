@@ -52,7 +52,9 @@ Resources:
       VpcId: !Ref MyVPC
       CidrBlock: 10.0.1.0/24
       MapPublicIpOnLaunch: true
-      AvailabilityZone: eu-west-1a
+      AvailabilityZone: 
+        - eu-west-1a
+        - eu-west-1b
       Tags:
         - Key: Name
           Value: PublicSubnet
@@ -63,7 +65,9 @@ Resources:
     Properties:
       VpcId: !Ref MyVPC
       CidrBlock: 10.0.2.0/24
-      AvailabilityZone:  eu-west-1a
+      AvailabilityZone:  
+        - eu-west-1a
+        - eu-west-1b
       Tags:
         - Key: Name
           Value: PrivateSubnet
