@@ -88,12 +88,16 @@ Resources:
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
 
-  PublicSubnetRouteTableAssociation:
+  PublicSubnetARouteAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: 
-        - !Ref SubnetPublicaA
-        - !Ref SubnetPublicaB
+      SubnetId: !Ref SubnetPublicaA
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnetBRouteAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref SubnetPublicaB
       RouteTableId: !Ref PublicRouteTable
 
   # NAT Gateway + EIP para la subred privada
@@ -106,9 +110,7 @@ Resources:
     Type: AWS::EC2::NatGateway
     Properties:
       AllocationId: !GetAtt NatEIP.AllocationId
-      SubnetId: 
-        - !Ref SubnetPublicaA
-        - !Ref SubnetPublicaB
+      SubnetId: !Ref SubnetPublicaA
       Tags:
         - Key: Name
           Value: NATGateway
@@ -126,12 +128,16 @@ Resources:
       DestinationCidrBlock: 0.0.0.0/0
       NatGatewayId: !Ref NatGateway
 
-  PrivateSubnetRouteTableAssociation:
+  PrivateSubnetRouteTableAAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: 
-        - !Ref SubnetPrivadaA
-        - !Ref SubnetPrivadaB
+      SubnetId: !Ref SubnetPrivadaA
+      RouteTableId: !Ref PrivateRouteTable
+
+  PrivateSubnetRouteTableBAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref SubnetPrivadaB
       RouteTableId: !Ref PrivateRouteTable
 
   # Security Groups 
@@ -173,9 +179,7 @@ Resources:
     Properties:
       InstanceType: t3.micro
       KeyName: !Ref KeyPairName
-      SubnetId: 
-        - !Ref SubnetPublicaA
-        - !Ref SubnetPublicaB
+      SubnetId: !Ref SubnetPublicaA
       SecurityGroupIds:
         - !Ref WebServerSG
       ImageId: ami-0152ea7e79f25bb5b   
