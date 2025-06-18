@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: >
- Arquitectura basica: VPC con subred publica (Web Server) y privada (RDS MySQL),
-  con NAT Gateway y reglas de seguridad mínimas.
+Description: |
+  Arquitectura basica: VPC con subred publica (Web Server) y privada (RDS MySQL),
+   con NAT Gateway y reglas de seguridad m?nimas.
 
 # Parametros
 Parameters:
@@ -18,8 +18,9 @@ Parameters:
   DBMasterPassword:
     Type: String
     NoEcho: true
-    MinLength: "8"
-    Description: Contraseña del usuario maestro (≥8 caracteres, incluir mayúsculas y números)
+    MinLength: '8'
+    Description: Contrase?a del usuario maestro (?8 caracteres, incluir may?sculas y
+      n?meros)
 
 # Recursos
 Resources:
@@ -51,6 +52,10 @@ Resources:
       VpcId: !Ref MyVPC
       CidrBlock: 10.0.1.0/24
       AvailabilityZone: eu-west-1a
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: PublicA
 
   SubnetPublicaB:
     Type: AWS::EC2::Subnet
@@ -58,6 +63,10 @@ Resources:
       VpcId: !Ref MyVPC
       CidrBlock: 10.0.2.0/24
       AvailabilityZone: eu-west-1b
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: PublicB
 
   # Subred privada
   SubnetPrivadaA:
@@ -66,6 +75,9 @@ Resources:
       VpcId: !Ref MyVPC
       CidrBlock: 10.0.3.0/24
       AvailabilityZone: eu-west-1a
+      Tags:
+        - Key: Name
+          Value: PrivateA
 
   SubnetPrivadaB:
     Type: AWS::EC2::Subnet
@@ -73,8 +85,11 @@ Resources:
       VpcId: !Ref MyVPC
       CidrBlock: 10.0.4.0/24
       AvailabilityZone: eu-west-1b
+      Tags:
+        - Key: Name
+          Value: PrivateB
 
-  # Tabla de rutas pública
+  # Tabla de rutas p?blica
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
@@ -182,7 +197,7 @@ Resources:
       SubnetId: !Ref SubnetPublicaA
       SecurityGroupIds:
         - !Ref WebServerSG
-      ImageId: ami-0152ea7e79f25bb5b   
+      ImageId: ami-0152ea7e79f25bb5b
       Tags:
         - Key: Name
           Value: WebServer
@@ -202,10 +217,10 @@ Resources:
   MySQLDatabase:
     Type: AWS::RDS::DBInstance
     Properties:
-      AllocatedStorage: "20"
+      AllocatedStorage: '20'
       DBInstanceClass: db.t3.micro
       Engine: mysql
-      EngineVersion: "8.0.36"
+      EngineVersion: 8.0.36
       MasterUsername: !Ref DBMasterUser
       MasterUserPassword: !Ref DBMasterPassword
       VPCSecurityGroups:
@@ -223,7 +238,7 @@ Resources:
 # Salidas 
 Outputs:
   WebServerPublicIP:
-    Description: IP pública del Web Server
+    Description: IP p?blica del Web Server
     Value: !GetAtt WebServerInstance.PublicIp
 
   RDSEndpoint:
