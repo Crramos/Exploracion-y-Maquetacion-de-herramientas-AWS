@@ -1,0 +1,212 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+ Arquitectura basica: VPC con subred publica (Web Server) y privada (RDS MySQL),
+  con NAT Gateway y reglas de seguridad mínimas.
+
+# Parametros
+Parameters:
+
+  KeyPairName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Nombre de la KeyPair para acceder por SSH al Web Server
+
+  DBMasterUser:
+    Type: String
+    Default: admin
+    Description: Usuario maestro de la base de datos MySQL
+
+  DBMasterPassword:
+    Type: String
+    NoEcho: true
+    MinLength: "8"
+    Description: Contraseña del usuario maestro (≥8 caracteres, incluir mayúsculas y números)
+
+# Recursos
+Resources:
+
+  # VPC
+  MyVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: TFG-VPC
+
+  # Internet Gateway y attach
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref MyVPC
+      InternetGatewayId: !Ref InternetGateway
+
+  # Subred pública
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MyVPC
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: eu-west-1a
+      Tags:
+        - Key: Name
+          Value: PublicSubnet
+
+  # Subred privada
+  PrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MyVPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone:  eu-west-1a
+      Tags:
+        - Key: Name
+          Value: PrivateSubnet
+
+  # Tabla de rutas pública
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MyVPC
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+
+  # NAT Gateway + EIP para la subred privada
+  NatEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatEIP.AllocationId
+      SubnetId: !Ref PublicSubnet
+      Tags:
+        - Key: Name
+          Value: NATGateway
+
+  # Tabla de rutas privada
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MyVPC
+
+  PrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+
+  PrivateSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet
+      RouteTableId: !Ref PrivateRouteTable
+
+  # Security Groups 
+  WebServerSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Permite SSH (22) y HTTP (80) desde Internet
+      VpcId: !Ref MyVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: WebServerSG
+
+  DBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Permite MySQL desde el SG del Web Server
+      VpcId: !Ref MyVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          SourceSecurityGroupId: !Ref WebServerSG
+      Tags:
+        - Key: Name
+          Value: DBSecurityGroup
+
+  # Web Server (EC2) 
+  WebServerInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t3.micro
+      KeyName: !Ref KeyPairName
+      SubnetId: !Ref PublicSubnet
+      SecurityGroupIds:
+        - !Ref WebServerSG
+      ImageId: ami-0152ea7e79f25bb5b   
+      Tags:
+        - Key: Name
+          Value: WebServer
+
+  # Base de Datos (RDS MySQL) 
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subred privada para RDS
+      SubnetIds:
+        - !Ref PrivateSubnet
+      Tags:
+        - Key: Name
+          Value: DBSubnetGroup
+
+  MySQLDatabase:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AllocatedStorage: "20"
+      DBInstanceClass: db.t3.micro
+      Engine: mysql
+      EngineVersion: "8.0.36"
+      MasterUsername: !Ref DBMasterUser
+      MasterUserPassword: !Ref DBMasterPassword
+      VPCSecurityGroups:
+        - !Ref DBSecurityGroup
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      MultiAZ: false
+      PubliclyAccessible: false
+      StorageEncrypted: true
+      BackupRetentionPeriod: 7
+      DeletionProtection: false
+      Tags:
+        - Key: Name
+          Value: MySQLDatabase
+
+# Salidas 
+Outputs:
+  WebServerPublicIP:
+    Description: IP pública del Web Server
+    Value: !GetAtt WebServerInstance.PublicIp
+
+  RDSEndpoint:
+    Description: Endpoint de la base de datos MySQL
+    Value: !GetAtt MySQLDatabase.Endpoint.Address
