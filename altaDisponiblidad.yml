@@ -19,7 +19,7 @@ Parameters:
     Type: String
     NoEcho: true
     MinLength: '8'
-    Description: Contrase?a del usuario maestro (Mas de 8 caracteres, incluir
+    Description: Contrasena del usuario maestro (Mas de 8 caracteres, incluir
       mayasculas y numeros)
 
   AuditBucketName:
@@ -484,10 +484,12 @@ Resources:
 
 # Salidas 
 Outputs:
-  WebServerPrivateIP:
-    Description: IP privada del Web Server
-    Value: !GetAtt WebServerInstance1.PrivateIp
-
+  LoadBalancerDNSName:
+    Description: DNS publico del Application Load Balancer
+    Value: !GetAtt AppLoadBalancer.DNSName
+    Export:
+      Name: ALB-DNS
+      
   RDSEndpoint:
     Description: Endpoint de la base de datos MySQL
     Value: !GetAtt MySQLDatabase.Endpoint.Address
