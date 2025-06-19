@@ -26,6 +26,11 @@ Parameters:
     Type: String
     Description: Nombre del bucket S3 central de auditoria y logs
 
+  AWSServiceRoleForConfig:
+    Type: String
+    Description: ARN del rol AWSServiceRoleForConfig
+
+
 # Recursos
 Resources:
   AWSBackupRole:
