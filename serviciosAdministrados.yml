@@ -312,6 +312,10 @@ Resources:
           FromPort: 80
           ToPort: 80
           SourceSecurityGroupId: !Ref LoadBalancerSG
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
           Value: WebServerSG
@@ -370,14 +374,13 @@ Resources:
         - Key: Name
           Value: WebServer1
       IamInstanceProfile: !Ref InstanceProfile
-      UserData: 
+      UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
           sudo yum update -y
           sudo yum install -y amazon-efs-utils
           sudo mkdir -p /mnt/efs
           sudo mount -t efs -o tls ${MyEFS}:/ /mnt/efs
-
 
   WebServerInstance2:
     Type: AWS::EC2::Instance
@@ -392,7 +395,7 @@ Resources:
         - Key: Name
           Value: WebServer2
       IamInstanceProfile: !Ref InstanceProfile
-      UserData: 
+      UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
           sudo yum update -y
