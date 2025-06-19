@@ -222,11 +222,11 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          SourceSecurityGroupId: 0.0.0.0/0
+          CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          CidrIp: !Ref LoadBalancerSG
+          SourceSecurityGroupId: !Ref LoadBalancerSG
       Tags:
         - Key: Name
           Value: WebServerSG
