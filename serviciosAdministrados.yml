@@ -42,7 +42,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AWSBackupFullAccess
 
-# Sistema de archivos EFS
+  # Sistema de archivos EFS
   MyEFS:
     Type: AWS::EFS::FileSystem
     Properties:
@@ -87,7 +87,7 @@ Resources:
     Properties:
       BackupVaultName: TFGBackupVault
 
-  # Backup Plan para EFS
+  # Backup Plan
   BackupPlan:
     Type: AWS::Backup::BackupPlan
     Properties:
@@ -111,6 +111,7 @@ Resources:
         IamRoleArn: !GetAtt AWSBackupRole.Arn
         Resources:
           - !Sub arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:file-system/${MyEFS}
+          - !Sub arn:aws:rds:${AWS::Region}:${AWS::AccountId}:db:${MySQLDatabase}
 
   InstanceSSMRole:
     Type: AWS::IAM::Role
