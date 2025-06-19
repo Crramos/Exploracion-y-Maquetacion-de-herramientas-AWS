@@ -94,7 +94,7 @@ Resources:
       BackupPlanId: !Ref BackupPlan
       BackupSelection:
         SelectionName: EFSSelection
-        IamRoleArn: arn:aws:iam::aws:policy/service-role/AWSBackupServiceRolePolicyForBackup
+        IamRoleArn: arn:aws:iam::aws:policy/AWSBackupFullAccess
         Resources:
           - !Sub arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:file-system/${MyEFS}
 
