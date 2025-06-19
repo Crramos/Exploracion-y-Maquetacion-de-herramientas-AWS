@@ -79,7 +79,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 2049
           ToPort: 2049
-          SourceSecurityGroupId: !Ref WebServerSG
+          CidrIp: 0.0.0.0/0
 
   # AWS Backup Vault
   BackupVault:
@@ -312,6 +312,10 @@ Resources:
           FromPort: 80
           ToPort: 80
           SourceSecurityGroupId: !Ref LoadBalancerSG
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          SourceSecurityGroupId: !Ref EFSSecurityGroup
       Tags:
         - Key: Name
           Value: WebServerSG
