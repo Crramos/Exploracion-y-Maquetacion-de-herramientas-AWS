@@ -28,6 +28,20 @@ Parameters:
 
 # Recursos
 Resources:
+  AWSBackupRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: AWSBackupServiceRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: backup.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSBackupFullAccess
+
 # Sistema de archivos EFS
   MyEFS:
     Type: AWS::EFS::FileSystem
@@ -94,7 +108,7 @@ Resources:
       BackupPlanId: !Ref BackupPlan
       BackupSelection:
         SelectionName: EFSSelection
-        IamRoleArn: arn:aws:iam::aws:policy/AWSBackupFullAccess
+        IamRoleArn: !GetAtt AWSBackupRole.Arn
         Resources:
           - !Sub arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:file-system/${MyEFS}
 
