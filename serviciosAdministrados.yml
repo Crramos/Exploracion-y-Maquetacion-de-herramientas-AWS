@@ -79,7 +79,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 2049
           ToPort: 2049
-          'SourceSecurityGroupId:': !Ref WebServerSG
+          SourceSecurityGroupId: !Ref WebServerSG
 
   # AWS Backup Vault
   BackupVault:
