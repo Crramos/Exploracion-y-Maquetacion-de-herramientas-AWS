@@ -222,11 +222,11 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          SourceSecurityGroupId: !Ref LoadBalancerSG
+          SourceSecurityGroupId: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          CidrIp: 0.0.0.0/0
+          CidrIp: !Ref LoadBalancerSG
       Tags:
         - Key: Name
           Value: WebServerSG
@@ -300,7 +300,7 @@ Resources:
           Value: WebServer2
       IamInstanceProfile: !Ref InstanceProfile
 
-# Load Balancer Target Group
+  # Load Balancer Target Group
   AppTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
@@ -322,6 +322,14 @@ Resources:
       LoadBalancerArn: !Ref AppLoadBalancer
       Port: 80
       Protocol: HTTP
+
+  InstanceConnectEndpointA:
+    Type: AWS::EC2::InstanceConnectEndpoint
+    Properties:
+      SubnetId: !Ref SubnetPrivadaC
+      SecurityGroupIds:
+        - !Ref WebServerSG
+      PreserveClientIp: true
 
   # Base de Datos (RDS MySQL) 
   DBSubnetGroup:
