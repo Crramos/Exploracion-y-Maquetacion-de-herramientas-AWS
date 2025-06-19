@@ -79,7 +79,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 2049
           ToPort: 2049
-          CidrIp: 0.0.0.0/0
+          'SourceSecurityGroupId:': !Ref WebServerSG
 
   # AWS Backup Vault
   BackupVault:
@@ -312,10 +312,6 @@ Resources:
           FromPort: 80
           ToPort: 80
           SourceSecurityGroupId: !Ref LoadBalancerSG
-        - IpProtocol: tcp
-          FromPort: 2049
-          ToPort: 2049
-          SourceSecurityGroupId: !Ref EFSSecurityGroup
       Tags:
         - Key: Name
           Value: WebServerSG
@@ -374,6 +370,13 @@ Resources:
         - Key: Name
           Value: WebServer1
       IamInstanceProfile: !Ref InstanceProfile
+      UserData: 
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update -y
+          yum install -y amazon-efs-utils
+          mkdir -p /mnt/efs
+          mount -t efs -o tls ${MyEFS}:/ /mnt/efs
 
   WebServerInstance2:
     Type: AWS::EC2::Instance
@@ -388,6 +391,13 @@ Resources:
         - Key: Name
           Value: WebServer2
       IamInstanceProfile: !Ref InstanceProfile
+      UserData: 
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update -y
+          yum install -y amazon-efs-utils
+          mkdir -p /mnt/efs
+          mount -t efs -o tls ${MyEFS}:/ /mnt/efs
 
   # Load Balancer Target Group
   AppTargetGroup:
