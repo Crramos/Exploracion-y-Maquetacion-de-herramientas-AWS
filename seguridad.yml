@@ -213,7 +213,7 @@ Resources:
       Name: WebACL-Seguridad
       Scope: REGIONAL
       DefaultAction:
-        Allow: {}
+        Block: {}
       VisibilityConfig:
         CloudWatchMetricsEnabled: true
         MetricName: WebACLMetric
