@@ -285,6 +285,13 @@ Resources:
         - Key: Name
           Value: WebServer1
       IamInstanceProfile: !Ref InstanceProfile
+      UserData:
+        Fn::Base64: !Sub |  
+          #!/bin/bash
+          sudo yum install -y httpd
+          sudo systemctl enable httpd
+          sudo systemctl start httpd
+          sudo echo "Servidor Web Funcionando" | sudo tee /var/www/html/index.html
 
   WebServerInstance2:
     Type: AWS::EC2::Instance
@@ -299,6 +306,12 @@ Resources:
         - Key: Name
           Value: WebServer2
       IamInstanceProfile: !Ref InstanceProfile
+      UserData:
+        Fn::Base64: !Sub |  
+          #!/bin/bash
+          sudo yum install -y httpd
+          sudo systemctl enable httpd
+          sudo systemctl start httpd
 
   # Load Balancer Target Group
   AppTargetGroup:

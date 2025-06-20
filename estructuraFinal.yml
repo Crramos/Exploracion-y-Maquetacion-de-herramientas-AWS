@@ -519,6 +519,7 @@ Resources:
           sudo yum install -y httpd
           sudo systemctl enable httpd
           sudo systemctl start httpd
+          echo "Servidor Web Funcionando" | sudo tee /var/www/html/index.html
 
   WebServerInstance2:
     Type: AWS::EC2::Instance
@@ -540,6 +541,9 @@ Resources:
           sudo yum install -y amazon-efs-utils
           sudo mkdir -p /mnt/efs
           sudo mount -t efs -o tls ${MyEFS}.efs.${AWS::Region}.amazonaws.com:/ /mnt/efs
+          sudo yum install -y httpd
+          sudo systemctl enable httpd
+          sudo systemctl start httpd
 
   # Load Balancer Target Group
   AppTargetGroup:
