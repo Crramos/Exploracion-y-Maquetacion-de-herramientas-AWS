@@ -232,6 +232,12 @@ Resources:
             CloudWatchMetricsEnabled: true
             MetricName: AWSManagedCommonRuleSet
 
+  WebACLAssociation:
+    Type: AWS::WAFv2::WebACLAssociation
+    Properties:
+      ResourceArn: !Ref AppLoadBalancer
+      WebACLArn: !GetAtt WAFWebACL.Arn
+
   # Internet Gateway y attach
   InternetGateway:
     Type: AWS::EC2::InternetGateway
