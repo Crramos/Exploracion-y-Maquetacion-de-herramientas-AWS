@@ -1,4 +1,4 @@
-# Exploración y Maquetación de herramientas AWS
+ # Exploración y Maquetación de herramientas AWS
 
 Se procederá aborda la implementación de una arquitectura de seguridad en AWS completamente automatizada mediante el uso de Infrastructure as Code (IaC) con AWS CloudFormation y la automatización de despliegues con GitHub Actions. El objetivo principal es facilitar la activación centralizada de servicios de seguridad clave así como la gestión de usuarios y permisos de forma reproducible y escalable.
 
